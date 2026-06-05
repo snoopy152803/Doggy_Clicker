@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doggy Clicker V34 (Balanced)</title>
+    <title>Doggy Clicker V35 (Stable Load)</title>
     
-    <!-- FIREBASE (Required for Multiplayer) -->
+    <!-- FIREBASE -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -91,7 +91,7 @@
 <body>
 
     <canvas id="starfield"></canvas>
-    <div id="loader"><div class="spinner"></div><div style="color:#888; font-weight:bold;">WAKING THE PACK...</div></div>
+    <div id="loader"><div class="spinner"></div><div id="loader-msg" style="color:#888; font-weight:bold;">WAKING THE PACK...</div></div>
 
     <div class="dashboard" id="game-ui">
         <!-- LEFT PANEL -->
@@ -200,17 +200,14 @@
                         <div style="color:var(--admin); font-weight:bold;">TARGET PLAYER ID</div>
                         <input type="text" id="admin-target" class="admin-input" placeholder="Paste User ID here...">
                     </div>
-                    
                     <div class="admin-box">
                         <button class="admin-btn" onclick="adminAction('ban')">BAN PLAYER (DELETE)</button>
                     </div>
-
                     <div class="admin-box">
                         <div style="color:var(--admin)">SET SCORE</div>
                         <input type="number" id="admin-score-val" class="admin-input" placeholder="Amount">
                         <button class="admin-btn" onclick="adminAction('setScore')">APPLY</button>
                     </div>
-
                     <div class="admin-box">
                         <div style="color:var(--admin)">BROADCAST MSG</div>
                         <input type="text" id="admin-msg" class="admin-input" placeholder="Message">
@@ -262,7 +259,7 @@
     // --- CONFIG ---
     const firebaseConfig = { apiKey: "AIzaSyCQ_t-pRJwwUcA3ywRjVdx-4WZhT9C4e6k", authDomain: "cosmic-clicker-snoopy152803.firebaseapp.com", projectId: "cosmic-clicker-snoopy152803", storageBucket: "cosmic-clicker-snoopy152803.firebasestorage.app", messagingSenderId: "319238837766", appId: "1:319238837766:web:071d9d5fc958551d559587", measurementId: "G-ZEPLY7XE8B" };
     
-    // *** ADMIN CONFIG HERE ***
+    // *** ADMIN EMAIL *** (Line 326)
     const ADMINS = ["your-email@gmail.com"]; 
 
     let db, auth, user=null, loaded=false, isAdmin=false;
@@ -270,21 +267,19 @@
     let currentPack=null, packListener=null;
     let clickHistory=[], isOverheated=false;
 
-    // Smoothed out Item Curve
     let items = [
         { id: 0, name: "Scritches", cost: 50, val: 1, type: "click", count: 0 },
         { id: 3, name: "Belly Rub", cost: 500, val: 10, type: "click", count: 0 },
-        { id: 30, name: "Squeaky Toy", cost: 2500, val: 50, type: "click", count: 0 }, // New
-        { id: 31, name: "Fancy Collar", cost: 12000, val: 150, type: "click", count: 0 }, // New
-        { id: 32, name: "Agility Course", cost: 1000000, val: 15000, type: "click", count: 0 }, // New
+        { id: 30, name: "Squeaky Toy", cost: 2500, val: 50, type: "click", count: 0 }, 
+        { id: 31, name: "Fancy Collar", cost: 12000, val: 150, type: "click", count: 0 }, 
+        { id: 32, name: "Agility Course", cost: 1000000, val: 15000, type: "click", count: 0 }, 
         { id: 10, name: "Golden Leash", cost: 5e6, val: 50000, type: "click", count: 0 },
-        
         { id: 1, name: "Auto-Petter", cost: 15, val: 1, type: "auto", count: 0 },
         { id: 2, name: "Neighbor Kid", cost: 100, val: 5, type: "auto", count: 0 },
         { id: 4, name: "Dog Walker", cost: 1000, val: 50, type: "auto", count: 0 },
         { id: 6, name: "Dog Park", cost: 5000, val: 150, type: "auto", count: 0 },
         { id: 5, name: "K9 Unit", cost: 25000, val: 500, type: "auto", count: 0 },
-        { id: 33, name: "Dog House", cost: 150000, val: 2000, type: "auto", count: 0 }, // New
+        { id: 33, name: "Dog House", cost: 150000, val: 2000, type: "auto", count: 0 }, 
         { id: 9, name: "Wolf Pack", cost: 1e6, val: 10000, type: "auto", count: 0 },
         { id: 20, name: "Treat Factory", cost: 2e8, val: 500000, type: "auto", count: 0 },
         { id: 26, name: "Planet of Dogs", cost: 4e12, val: 15000000000, type: "auto", count: 0 }
@@ -292,8 +287,15 @@
 
     if(typeof firebase!=='undefined'){ try{firebase.initializeApp(firebaseConfig); db=firebase.firestore(); auth=firebase.auth(); auth.onAuthStateChanged(u=>{ if(u){ user=u; document.getElementById('login-btn').style.display='none'; document.getElementById('user-display').style.display='flex'; document.getElementById('username').innerText=u.displayName.split(' ')[0]; checkAdmin(); load(); initChat(); initMail(); } else { document.getElementById('loader').style.display='none'; document.getElementById('game-ui').style.opacity='1'; } }); }catch(e){console.error(e);} }
 
+    // --- SAFETY TIMEOUT: Force Load if Database is Stuck ---
+    setTimeout(() => {
+        if(document.getElementById('loader').style.display !== 'none') {
+            document.getElementById('loader-msg').innerText = "CONNECTION SLOW. ENTERING OFFLINE MODE...";
+            setTimeout(startGuestMode, 1500);
+        }
+    }, 4000);
+
     function attemptLogin() {
-        // Fallback to Guest Mode if Firebase fails
         try {
             const p = new firebase.auth.GoogleAuthProvider();
             auth.signInWithPopup(p).catch(e => startGuestMode());
@@ -301,17 +303,16 @@
     }
     
     function startGuestMode() {
-        // Mock User
-        user = { uid: "GUEST_12345", displayName: "Guest Handler", email: "guest@dog.com" };
+        if(loaded) return; 
+        user = { uid: "GUEST_"+Math.floor(Math.random()*9999), displayName: "Guest", email: "guest@dog.com" };
         document.getElementById('login-btn').style.display='none';
         document.getElementById('user-display').style.display='flex';
         document.getElementById('username').innerText="Guest";
-        showToast("Playing as Guest (Offline)", false);
         document.getElementById('loader').style.display='none';
         document.getElementById('game-ui').style.opacity='1';
+        loaded=true;
         render(); update();
-        // Allow mock admin
-        if(ADMINS.includes("guest@dog.com")) checkAdmin();
+        showToast("Started in Offline Mode", false);
     }
 
     function checkAdmin() {
@@ -359,7 +360,7 @@
         document.getElementById('ascend-btn').disabled=score<1e9;
         
         const btn=document.getElementById('click-btn'); btn.className='';
-        if(score>5e8) btn.classList.add('stage-5'); else if(score>10000) btn.classList.add('stage-1'); else btn.classList.add('stage-0');
+        if(score>5e8) btn.classList.add('stage-5'); else if(score>10000) btn.classList.add('stage-0');
         if(isOverheated) btn.classList.add('overheated');
         items.forEach(i=>{const b=document.getElementById(`btn-${i.id}`); if(b)b.disabled=score<i.cost;});
     }
