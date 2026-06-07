@@ -257,10 +257,19 @@
     const halo=document.getElementById('halo'); for(let i=0;i<24;i++){ const el=document.createElement('div'); el.className='halo-paw'; el.innerText='🐾'; const a=Math.random()*Math.PI*2, d=180+Math.random()*40; el.style.left=(225+Math.cos(a)*d)+'px'; el.style.top=(225+Math.sin(a)*d)+'px'; halo.appendChild(el); }
 
     // --- CONFIG ---
-    const firebaseConfig = { apiKey: "AIzaSyCQ_t-pRJwwUcA3ywRjVdx-4WZhT9C4e6k", authDomain: "cosmic-clicker-snoopy152803.firebaseapp.com", projectId: "cosmic-clicker-snoopy152803", storageBucket: "cosmic-clicker-snoopy152803.firebasestorage.app", messagingSenderId: "319238837766", appId: "1:319238837766:web:071d9d5fc958551d559587", measurementId: "G-ZEPLY7XE8B" };
+    const firebaseConfig = { 
+    apiKey: "AIzaSyCQ_t-pRJwwUcA3ywRjVdx-4WZhT9C4e6k", 
+    authDomain: "cosmic-clicker-snoopy152803.firebaseapp.com", 
+    projectId: "cosmic-clicker-snoopy152803", 
+    storageBucket: "cosmic-clicker-snoopy152803.firebasestorage.app", 
+    messagingSenderId: "319238837766", 
+    appId: "1:319238837766:web:071d9d5fc958551d559587", 
+    measurementId: "G-ZEPLY7XE8B" 
+};
+
     
     // *** ADMIN EMAIL *** (Line 326)
-    const ADMINS = ["your-email@gmail.com"]; 
+    const ADMINS = ["yawensha16@gmail.com"]; 
 
     let db, auth, user=null, loaded=false, isAdmin=false;
     let score=0, lifetime=0, prestige=0;
